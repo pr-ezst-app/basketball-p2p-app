@@ -80,10 +80,29 @@ const initialMessages = [
   { id: 6, author: "Tyrone W.", text: "Agreed. I got the gap assignment drills ready for warmup", time: "10:52", own: false, avatar: "TW" },
 ];
 
+type LobbyState = "idle" | "waiting" | "ready";
+
 export default function Index() {
   const [active, setActive] = useState<Section>("hub");
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState(initialMessages);
+  const [lobbyState, setLobbyState] = useState<LobbyState>("idle");
+  const [playersReady, setPlayersReady] = useState(3);
+
+  const handleStartGame = () => {
+    setLobbyState("waiting");
+    setPlayersReady(3);
+    const interval = setInterval(() => {
+      setPlayersReady(prev => {
+        if (prev >= 10) {
+          clearInterval(interval);
+          setTimeout(() => setLobbyState("ready"), 400);
+          return 10;
+        }
+        return prev + 1;
+      });
+    }, 600);
+  };
 
   const sendMessage = () => {
     if (!chatInput.trim()) return;
@@ -193,11 +212,90 @@ export default function Index() {
             <div>
               <h2 className="font-display font-bold text-2xl uppercase text-foreground mb-3 tracking-wide">Upcoming Games</h2>
               <div className="space-y-2">
-                {upcomingGames.map((g, i) => (
+                {/* Next game — interactive lobby card */}
+                <div className={`rounded-2xl border overflow-hidden transition-all duration-500 ${lobbyState === "ready" ? "border-green-500/50" : lobbyState === "waiting" ? "border-primary/40" : "border-border"}`}>
+                  {lobbyState === "idle" && (
+                    <div className="px-5 py-4 flex items-center justify-between bg-gradient-to-r from-primary/8 to-transparent">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
+                          <Icon name="Swords" size={18} className="text-primary" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-body font-semibold text-sm text-foreground">vs Chicago Bulls</p>
+                            <Badge className="bg-primary/15 text-primary border-primary/25 text-xs">Next</Badge>
+                          </div>
+                          <p className="text-muted-foreground text-xs">United Center · May 23 · 19:30</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleStartGame}
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-body font-semibold hover:bg-primary/90 active:scale-95 transition-all orange-glow"
+                      >
+                        <Icon name="Play" size={14} />
+                        Start Game
+                      </button>
+                    </div>
+                  )}
+
+                  {lobbyState === "waiting" && (
+                    <div className="px-5 py-5 bg-gradient-to-r from-primary/8 to-transparent">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="live-dot" />
+                            <span className="font-display font-bold text-base uppercase text-foreground">Waiting for players</span>
+                          </div>
+                          <p className="text-muted-foreground text-xs font-body">Brooklyn Ballers vs Chicago Bulls · May 23</p>
+                        </div>
+                        <button onClick={() => setLobbyState("idle")} className="text-xs text-muted-foreground hover:text-foreground transition-colors font-body">Cancel</button>
+                      </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground font-body">Players confirmed</span>
+                        <span className="font-display font-bold text-primary">{playersReady} / 10</span>
+                      </div>
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden mb-4">
+                        <div
+                          className="progress-bar h-full transition-all duration-500 ease-out"
+                          style={{ width: `${(playersReady / 10) * 100}%` }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-5 gap-2">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div key={i} className={`h-8 rounded-md flex items-center justify-center text-xs font-display font-bold transition-all duration-300 ${i < playersReady ? "bg-primary/20 border border-primary/35 text-primary" : "bg-secondary border border-border text-muted-foreground"}`}>
+                            {i < playersReady ? <Icon name="Check" size={13} /> : <Icon name="User" size={13} />}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {lobbyState === "ready" && (
+                    <div className="px-5 py-5 bg-gradient-to-r from-green-500/8 to-transparent text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <Icon name="CheckCircle" size={20} className="text-green-400" />
+                        <span className="font-display font-black text-xl uppercase text-green-400">All Players Ready!</span>
+                      </div>
+                      <p className="text-muted-foreground text-xs font-body mb-4">Brooklyn Ballers vs Chicago Bulls · 10/10 confirmed</p>
+                      <div className="flex gap-3 justify-center">
+                        <button className="flex items-center gap-2 bg-green-500 text-white px-6 py-2.5 rounded-lg text-sm font-body font-semibold hover:bg-green-500/90 transition-all">
+                          <Icon name="Gamepad2" size={15} />
+                          Enter Matchup
+                        </button>
+                        <button onClick={() => setLobbyState("idle")} className="px-4 py-2.5 rounded-lg text-sm font-body text-muted-foreground border border-border hover:text-foreground hover:border-muted-foreground transition-all">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Other upcoming games */}
+                {upcomingGames.slice(1).map((g, i) => (
                   <div key={i} className="stat-card rounded-xl px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${g.home ? "bg-primary/15 border border-primary/30" : "bg-secondary"}`}>
-                        <Icon name="Swords" size={16} className={g.home ? "text-primary" : "text-muted-foreground"} />
+                      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
+                        <Icon name="Swords" size={16} className="text-muted-foreground" />
                       </div>
                       <div>
                         <p className="font-body font-semibold text-sm text-foreground">vs {g.opponent}</p>
